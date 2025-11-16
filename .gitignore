@@ -1,0 +1,23 @@
+# Build output
+/build/
+/sdkconfig.old
+/sdkconfig.backup
+
+# IDE
+.vscode/
+.esp-idf/
+*.launch
+*.user
+
+# CMake / Ninja
+CMakeFiles/
+CMakeCache.txt
+Makefile
+cmake_install.cmake
+compile_commands.json
+
+# Logs
+*.log
+
+# ESP-IDF temporary build files
+esp-idf/components/**/build/
