@@ -1,5 +1,6 @@
 #include "DroneWebServer.hpp"
 #include "esp_log.h"
+#include "portmacro.h"
 #include <stdio.h>
 #include <string>
 
@@ -50,6 +51,7 @@ DroneWebServer::DroneWebServer() : server(nullptr), drone(nullptr) {}
 void DroneWebServer::start(Drone* dr) {
     drone = dr;
     httpd_config_t config = HTTPD_DEFAULT_CONFIG();
+    config.core_id = 0;
     if(httpd_start(&server, &config) != ESP_OK){
         ESP_LOGE("WebServer","Failed to start HTTP server");
         return;
