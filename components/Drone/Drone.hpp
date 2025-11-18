@@ -1,31 +1,35 @@
 #pragma once
-#include "freertos/FreeRTOS.h"
-#include "freertos/idf_additions.h"
-#include "freertos/task.h"
-#include <cstdint>
-
-#define LATENCY_HISTORY_SIZE 100
+#include "SpiMpuSampler.hpp"
+#include "MpuFilter.hpp"
+#include "IController.hpp"
+#include "PidController.hpp"
+#include "SamplingTimer.hpp"
+#include "MotorGroup.hpp"
+#include "PwmMotor.hpp"
+#include "freertos/queue.h"
 
 class Drone {
 public:
-    Drone();
+    Drone(int miso, int mosi, int sck, int cs, uint64_t samplePeriodUs,
+          PwmMotor* m1, PwmMotor* m2, PwmMotor* m3, PwmMotor* m4);
+    ~Drone();
+
+    void setTargetAngles(const Angles& target);
+    bool getMeasuredAngles(Angles& out);
+
     void start();
-    void setFrequency(float freq);
-    float getValue();
-
+    
 private:
-    static void taskFunc(void* pvParameters);
+    SpiMpuSampler mpu;
+    MpuFilter filter;
+    PidController pid;
+    SamplingTimer timer;
+
+    MotorGroup motors;
+
+    QueueHandle_t measuredQueue;
+    QueueHandle_t targetQueue;
+
+    static void taskFunc(void* arg);
     void loop();
-    static void latencyPrinterTask(void* pvParameters);
-
-    static bool IRAM_ATTR timer_isr_cb(void* arg);
-
-    QueueHandle_t frequency_mailbox;
-    QueueHandle_t value_mailbox;
-    QueueHandle_t isr_time_queue;
-
-    int latencyHistory[LATENCY_HISTORY_SIZE] = {};
-    int isrLatency[LATENCY_HISTORY_SIZE] = {};
-    int latencyIndex = 0;
-    int isrIndex = 0;
 };
