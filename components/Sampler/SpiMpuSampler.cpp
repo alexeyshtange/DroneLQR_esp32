@@ -3,6 +3,8 @@
 #include <cstring>
 #include "esp_heap_caps.h"
 #include "esp_timer.h"
+#include "driver/timer.h"
+#include "driver/timer_types_legacy.h"
 
 SpiMpuSampler::SpiMpuSampler(int miso, int mosi, int sck, int cs) {
     queue = xQueueCreate(1, sizeof(uint8_t*));
@@ -85,6 +87,26 @@ void IRAM_ATTR SpiMpuSampler::spi_post_cb(spi_transaction_t* t) {
 	#endif
 
     BaseType_t hpw = pdFALSE;
+    
+    self->capture_latency();
+    
     xQueueOverwriteFromISR(self->queue, &self->dmaRx, &hpw);
     if (hpw) portYIELD_FROM_ISR();
+}
+
+void SpiMpuSampler::capture_latency() {
+	uint64_t latency_;
+    timer_get_counter_value(TIMER_GROUP_0, TIMER_0, &latency_);
+
+    latency[index] = latency_;
+    index = (index + 1) % LATENCY_HISTORY_SIZE;
+}
+
+void SpiMpuSampler::printf_latency() {
+        uint64_t max_latency = 0;
+        int idx;
+        for(idx = 0; idx < LATENCY_HISTORY_SIZE; idx++) {
+            if(latency[idx] > max_latency) max_latency = latency[idx];
+        }
+        printf("SPI ISR: %llu us \n", max_latency);
 }

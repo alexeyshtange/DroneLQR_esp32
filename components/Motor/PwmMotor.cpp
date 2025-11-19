@@ -17,6 +17,7 @@ PwmMotor::PwmMotor(int gpio, ledc_channel_t channel_, ledc_timer_t timer_)
 }
 
 void PwmMotor::setValue(float value) {
+	value = value/45;
     if (value > 1.0f) value = 1.0f;
     if (value < -1.0f) value = -1.0f;
     currentValue = value;

@@ -8,6 +8,8 @@
 #include "PwmMotor.hpp"
 #include "freertos/queue.h"
 
+#define LATENCY_HISTORY_SIZE 256
+
 class Drone {
 public:
     Drone(int miso, int mosi, int sck, int cs, uint64_t samplePeriodUs,
@@ -19,6 +21,7 @@ public:
 
     void start();
     
+    void printf_latency();
 private:
     SpiMpuSampler mpu;
     MpuFilter filter;
@@ -32,4 +35,8 @@ private:
 
     static void taskFunc(void* arg);
     void loop();
+    
+    volatile uint64_t latency[LATENCY_HISTORY_SIZE];
+	volatile int index = 0;
+	void capture_latency();
 };

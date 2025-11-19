@@ -28,6 +28,7 @@ bool Drone::getMeasuredAngles(Angles& out) {
 }
 
 void Drone::start() {
+	timer.start();
     xTaskCreatePinnedToCore(taskFunc, "DroneTask", 4096, this, 15, nullptr, 1);
 }
 
@@ -37,14 +38,13 @@ void Drone::taskFunc(void* arg) {
 }
 
 void Drone::loop() {
-    const TickType_t timeout = pdMS_TO_TICKS(5);
     ISample sample;
     Angles measured, target;
     ControlOutput control;
 
     while (true) {
         // 1. get sample
-        if (mpu.readSample(sample, timeout)) {
+        if (mpu.readSample(sample, portMAX_DELAY)) {
             filter.processSample(sample);
             measured = filter.getAngles();
 
@@ -57,10 +57,31 @@ void Drone::loop() {
             }
 
             // 4. control algorytm
-            control = pid.update(measured, target, 0.004f); // dt = 4ms
+            control = pid.update(measured, target, 0.010f); // dt = 10ms
 
             // 5. motors
             motors.applyControl(control);
+            
+            // 6. capture latency
+            capture_latency();
         }
     }
+}
+
+void Drone::capture_latency() {
+	uint64_t latency_;
+    timer_get_counter_value(TIMER_GROUP_0, TIMER_0, &latency_);
+
+    latency[index] = latency_;
+    index = (index + 1) % LATENCY_HISTORY_SIZE;
+}
+
+void Drone::printf_latency() {
+        uint64_t max_latency = 0;
+        int idx;
+        for(idx = 0; idx < LATENCY_HISTORY_SIZE; idx++) {
+            if(latency[idx] > max_latency) max_latency = latency[idx];
+        }
+        printf("[Max latency last second]: drone task: %llu us \t", max_latency);
+        mpu.printf_latency();
 }
