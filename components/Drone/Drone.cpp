@@ -21,15 +21,20 @@ Drone::Drone()
 	motorGroup->setMotors(motors);
 	
 	//sampler = new SpiMpuSampler(13, 12, 14, 15);
-	sampler = new MockSampler();
+	sampler = new MockSampler(
+    0.5f, 0.5f, 1.0f,   // accelerometer amplitudes
+    0.05f, 0.05f, 0.01f, // gyroscope amplitudes
+    0.02f, 0.02f, 0.02f, // accelerometer noise std
+    0.005f, 0.005f, 0.002f // gyroscope noise std
+	);
 	
-	controller = new PidController(1.0f, 0.0f, 0.0f, 0.010f);
+	controller = new PidController(1.0f, 0.0f, 0.0f, 0.100f);
 	
-	controlTimer = new ControlTimer(TIMER_GROUP_0, TIMER_0, 10000);
+	controlTimer = new ControlTimer(TIMER_GROUP_0, TIMER_0, 100000);
 	controlTimer->setSampler(sampler);
 	controlTimer->setMotorGroup(motorGroup);
 	
-	filter = new ComplementaryFilter();
+	filter = new ComplementaryFilter(0.1f, 0.100f);
 	
 	wifiManager = new WiFiManager("ESP32-Drone", "12345678", "192.168.10.1", "192.168.10.1", "255.255.255.0");
 	wifiManager->start();

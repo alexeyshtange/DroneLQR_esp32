@@ -4,16 +4,17 @@
 
 class ComplementaryFilter : public IFilter {
 public:
-    ComplementaryFilter();
+    ComplementaryFilter(float alpha, float dt);
 
     void processSample(const ISample& s) override;
 
     Angles getAngles() const override;
 
 private:
+    float alpha;
+    float dt;
+
     float roll;
     float pitch;
     float yaw;
-
-    float alpha = 0.1f; // low-pass coefficient
 };
