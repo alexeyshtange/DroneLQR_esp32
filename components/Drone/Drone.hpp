@@ -25,9 +25,6 @@ private:
     ControlTimer* controlTimer;
 	WiFiManager* wifiManager;
 	ITelemetry* telemetry;
-	
-    QueueHandle_t measuredQueue;
-    QueueHandle_t targetQueue;
 
     static void taskFunc(void* arg);
     void loop();

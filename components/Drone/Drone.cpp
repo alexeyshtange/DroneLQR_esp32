@@ -2,6 +2,7 @@
 #include "ComplementaryFilter.hpp"
 #include "PidController.hpp"
 #include "SpiMpuSampler.hpp"
+#include "MockSampler.hpp"
 #include "PwmMotor.hpp"
 #include "TelemetryUdp.hpp"
 #include "freertos/FreeRTOS.h"
@@ -19,7 +20,8 @@ Drone::Drone()
 	
 	motorGroup->setMotors(motors);
 	
-	sampler = new SpiMpuSampler(13, 12, 14, 15);
+	//sampler = new SpiMpuSampler(13, 12, 14, 15);
+	sampler = new MockSampler();
 	
 	controller = new PidController(1.0f, 0.0f, 0.0f, 0.010f);
 	
@@ -37,8 +39,7 @@ Drone::Drone()
 }
 
 Drone::~Drone() {
-    vQueueDelete(measuredQueue);
-    vQueueDelete(targetQueue);
+
 }
 
 void Drone::start() {

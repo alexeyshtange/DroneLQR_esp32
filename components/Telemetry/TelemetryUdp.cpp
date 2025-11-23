@@ -128,7 +128,7 @@ void TelemetryUdp::sendTask(void* arg) {
 
         if(self->clientKnown){
             if(xQueuePeek(self->measuredQueue, &measured, 0) == pdTRUE){
-                int len = snprintf(pkt, sizeof(pkt), "%.2f,%.2f,%.2f",
+                int len = snprintf(pkt, sizeof(pkt), "ANGLES=%.2f,%.2f,%.2f",
                                    measured.roll, measured.pitch, measured.yaw);
                 sendto(self->sock, pkt, len, 0, (sockaddr*)&self->clientAddr, sizeof(self->clientAddr));
             }
