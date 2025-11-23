@@ -1,5 +1,6 @@
-#include "../Sampler/SpiMpuSampler.hpp"
-
+#include "SpiMpuSampler.hpp"
+#include "AccelGyroSample.hpp"
+#include "LogicProbe.hpp"
 #include <cstring>
 #include "esp_heap_caps.h"
 #include "esp_timer.h"
@@ -60,18 +61,18 @@ bool SpiMpuSampler::readSample(ISample& out, TickType_t timeout) {
     if (xQueueReceive(queue, &raw, timeout) != pdTRUE)
         return false;
 
-    SpiMpuSampler::Sample& sample = static_cast<SpiMpuSampler::Sample&>(out);
+    AccelGyroSample& sample = static_cast<AccelGyroSample&>(out);
 
     #if USE_TIMESTAMP
     memcpy(&sample.timestamp, raw + 14, sizeof(sample.timestamp));
     #endif
 
-    sample.ax = (raw[0] << 8) | raw[1];
-    sample.ay = (raw[2] << 8) | raw[3];
-    sample.az = (raw[4] << 8) | raw[5];
-    sample.gx = (raw[8] << 8) | raw[9];
-    sample.gy = (raw[10] << 8) | raw[11];
-    sample.gz = (raw[12] << 8) | raw[13];
+    sample.ax = ((raw[0] << 8) | raw[1]) / 16384.0f;
+    sample.ay = ((raw[2] << 8) | raw[3]) / 16384.0f;
+    sample.az = ((raw[4] << 8) | raw[5]) / 16384.0f;
+    sample.gx = ((raw[8] << 8) | raw[9]) / 131.0f;
+    sample.gy = ((raw[10] << 8) | raw[11]) / 131.0f;
+    sample.gz = ((raw[12] << 8) | raw[13]) / 131.0f;
 
     return true;
 }
@@ -86,27 +87,7 @@ void IRAM_ATTR SpiMpuSampler::spi_post_cb(spi_transaction_t* t) {
     memcpy(self->dmaRx + 14, &ts, sizeof(ts));
 	#endif
 
-    BaseType_t hpw = pdFALSE;
-    
-    self->capture_latency();
-    
-    xQueueOverwriteFromISR(self->queue, &self->dmaRx, &hpw);
+    BaseType_t hpw = pdFALSE;     
+    xQueueOverwriteFromISR(self->queue, &self->dmaRx, &hpw);    
     if (hpw) portYIELD_FROM_ISR();
-}
-
-void SpiMpuSampler::capture_latency() {
-	uint64_t latency_;
-    timer_get_counter_value(TIMER_GROUP_0, TIMER_0, &latency_);
-
-    latency[index] = latency_;
-    index = (index + 1) % LATENCY_HISTORY_SIZE;
-}
-
-void SpiMpuSampler::printf_latency() {
-        uint64_t max_latency = 0;
-        int idx;
-        for(idx = 0; idx < LATENCY_HISTORY_SIZE; idx++) {
-            if(latency[idx] > max_latency) max_latency = latency[idx];
-        }
-        printf("SPI ISR: %llu us \n", max_latency);
 }

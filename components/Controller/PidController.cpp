@@ -1,11 +1,11 @@
 #include "PidController.hpp"
 
-PidController::PidController(float kp_, float ki_, float kd_)
-    : kp(kp_), ki(ki_), kd(kd_),
+PidController::PidController(float kp_, float ki_, float kd_, float dt_)
+    : kp(kp_), ki(ki_), kd(kd_), dt(dt_),
       integratorRoll(0), integratorPitch(0), integratorYaw(0),
       prevErrorRoll(0), prevErrorPitch(0), prevErrorYaw(0) {}
 
-ControlOutput PidController::update(const Angles& angles, const Angles& setpoints, float dt) {
+ControlOutput PidController::update(const Angles& angles, const Angles& setpoints) {
     ControlOutput out;
 
     float eRoll  = setpoints.roll  - angles.roll;

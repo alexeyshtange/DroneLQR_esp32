@@ -1,8 +1,11 @@
-#include "SamplingTimer.hpp"
+#include "ControlTimer.hpp"
+#include "MotorGroup.hpp"
+#include "LogicProbe.hpp"
 #include "esp_log.h"
+#include "soc/gpio_num.h"
 
-SamplingTimer::SamplingTimer(timer_group_t group_, timer_idx_t timerNum_, ISampler* sampler_, uint64_t period_us)
-    : group(group_), timer(timerNum_), sampler(sampler_), period(period_us)
+ControlTimer::ControlTimer(timer_group_t group_, timer_idx_t timerNum_, uint64_t period_us)
+    : group(group_), timer(timerNum_), period(period_us)
 {
     timer_config_t cfg{};
     cfg.divider = 80;               
@@ -20,22 +23,31 @@ SamplingTimer::SamplingTimer(timer_group_t group_, timer_idx_t timerNum_, ISampl
     timer_isr_callback_add(group, timer, timerIsr, this, ESP_INTR_FLAG_IRAM);
 }
 
-SamplingTimer::~SamplingTimer() {
+ControlTimer::~ControlTimer() {
     stop();
 }
 
-void SamplingTimer::start() {
+void ControlTimer::setSampler(ISampler* sampler_) {
+	sampler = sampler_;
+}
+void ControlTimer::setMotorGroup(MotorGroup *motorGroup_) {
+	motorGroup = motorGroup_;
+}
+
+void ControlTimer::start() {
     timer_start(group, timer);
 }
 
-void SamplingTimer::stop() {
+void ControlTimer::stop() {
     timer_pause(group, timer);
 }
 
-bool IRAM_ATTR SamplingTimer::timerIsr(void* arg) {
-    SamplingTimer* self = static_cast<SamplingTimer*>(arg);
+bool IRAM_ATTR ControlTimer::timerIsr(void* arg) {	
+    ControlTimer* self = static_cast<ControlTimer*>(arg);
     if (!self || !self->sampler) return false;
 
     self->sampler->captureSample();
+    self->motorGroup->updateFromISR();
+
     return true; // request scheduler
 }

@@ -1,14 +1,8 @@
 #pragma once
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
-
-#define USE_TIMESTAMP 1
-
-struct ISample {
-	#if USE_TIMESTAMP
-    int64_t timestamp;
-    #endif
-};
+#include "ISample.hpp"
+#include <cstdint>
 
 class ISampler {
 public:

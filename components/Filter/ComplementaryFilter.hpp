@@ -2,9 +2,9 @@
 #include "IFilter.hpp"
 #include <cmath>
 
-class MpuFilter : public IFilter {
+class ComplementaryFilter : public IFilter {
 public:
-    MpuFilter();
+    ComplementaryFilter();
 
     void processSample(const ISample& s) override;
 

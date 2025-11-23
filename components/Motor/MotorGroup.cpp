@@ -1,13 +1,14 @@
 #include "MotorGroup.hpp"
 
-MotorGroup::MotorGroup(IMotor* m1, IMotor* m2, IMotor* m3, IMotor* m4) {
-    motors[0] = m1;
-    motors[1] = m2;
-    motors[2] = m3;
-    motors[3] = m4;
+MotorGroup::MotorGroup() {
+
 }
 
-void MotorGroup::applyControl(const ControlOutput& u) {
+void MotorGroup::setMotors(IMotor* motors_[4]) {
+	for (int i=0; i<4; ++i) motors[i] = motors_[i];
+}
+
+void MotorGroup::setControl(const ControlOutput& u) {
 
     float base = 0.5f;
 
@@ -20,4 +21,16 @@ void MotorGroup::applyControl(const ControlOutput& u) {
     motors[1]->setValue(m1);
     motors[2]->setValue(m2);
     motors[3]->setValue(m3);
+    
+    control_set_flag = true;
+}
+
+void MotorGroup::updateFromISR() {
+	if(control_set_flag) {
+		control_set_flag = false;
+		motors[0]->updateFromISR();
+	    motors[1]->updateFromISR();
+	    motors[2]->updateFromISR();
+	    motors[3]->updateFromISR();
+    }
 }

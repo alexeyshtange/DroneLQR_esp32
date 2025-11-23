@@ -1,17 +1,39 @@
 #include "Drone.hpp"
-#include "IController.hpp"
+#include "ComplementaryFilter.hpp"
+#include "PidController.hpp"
+#include "SpiMpuSampler.hpp"
+#include "PwmMotor.hpp"
+#include "TelemetryUdp.hpp"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
-Drone::Drone(int miso, int mosi, int sck, int cs, uint64_t samplePeriodUs,
-             PwmMotor* m1, PwmMotor* m2, PwmMotor* m3, PwmMotor* m4)
-    : mpu(miso, mosi, sck, cs),
-      pid(1.0f, 0.0f, 0.0f),
-      timer(TIMER_GROUP_0, TIMER_0, &mpu, samplePeriodUs),
-      motors(m1, m2, m3, m4)
+Drone::Drone()
 {
-    measuredQueue = xQueueCreate(1, sizeof(Angles));
-    targetQueue   = xQueueCreate(1, sizeof(Angles));
+	PwmMotor::initPwm();
+	motors[0] = new PwmMotor(2,  LEDC_CHANNEL_0);
+	motors[1] = new PwmMotor(4, LEDC_CHANNEL_1);
+	motors[2] = new PwmMotor(16, LEDC_CHANNEL_2);
+	motors[3] = new PwmMotor(17, LEDC_CHANNEL_3);
+	
+	motorGroup = new MotorGroup();
+	
+	motorGroup->setMotors(motors);
+	
+	sampler = new SpiMpuSampler(13, 12, 14, 15);
+	
+	controller = new PidController(1.0f, 0.0f, 0.0f, 0.010f);
+	
+	controlTimer = new ControlTimer(TIMER_GROUP_0, TIMER_0, 10000);
+	controlTimer->setSampler(sampler);
+	controlTimer->setMotorGroup(motorGroup);
+	
+	filter = new ComplementaryFilter();
+	
+	wifiManager = new WiFiManager("ESP32-Drone", "12345678", "192.168.10.1", "192.168.10.1", "255.255.255.0");
+	wifiManager->start();
+	
+	telemetry = new TelemetryUdp();
+	telemetry->start();
 }
 
 Drone::~Drone() {
@@ -19,16 +41,8 @@ Drone::~Drone() {
     vQueueDelete(targetQueue);
 }
 
-void Drone::setTargetAngles(const Angles& target) {
-    xQueueOverwrite(targetQueue, &target);
-}
-
-bool Drone::getMeasuredAngles(Angles& out) {
-    return xQueuePeek(measuredQueue, &out, 0) == pdTRUE;
-}
-
 void Drone::start() {
-	timer.start();
+	controlTimer->start();
     xTaskCreatePinnedToCore(taskFunc, "DroneTask", 4096, this, 15, nullptr, 1);
 }
 
@@ -44,44 +58,25 @@ void Drone::loop() {
 
     while (true) {
         // 1. get sample
-        if (mpu.readSample(sample, portMAX_DELAY)) {
-            filter.processSample(sample);
-            measured = filter.getAngles();
+    	sampler->readSample(sample, portMAX_DELAY);
+    	
+    	// 2. filter
+        filter->processSample(sample);
+        measured = filter->getAngles();
 
-            // 2. put measured
-            xQueueOverwrite(measuredQueue, &measured);
+        // 3. put measured
+        telemetry->putMeasuredAngles(measured);
 
-            // 3. get target
-            if (xQueuePeek(targetQueue, &target, 0) != pdTRUE) {
-                target = {0.0f, 0.0f, 0.0f}; // default
-            }
+        // 4. get target
+		telemetry->getTargetAngles(target);
 
-            // 4. control algorytm
-            control = pid.update(measured, target, 0.010f); // dt = 10ms
-
-            // 5. motors
-            motors.applyControl(control);
-            
-            // 6. capture latency
-            capture_latency();
-        }
+        // 5. control algorytm
+        control = controller->update(measured, target);
+        
+        // 6. put control
+		telemetry->putControlOutput(control);
+		
+        // 7. motors
+        motorGroup->setControl(control);
     }
-}
-
-void Drone::capture_latency() {
-	uint64_t latency_;
-    timer_get_counter_value(TIMER_GROUP_0, TIMER_0, &latency_);
-
-    latency[index] = latency_;
-    index = (index + 1) % LATENCY_HISTORY_SIZE;
-}
-
-void Drone::printf_latency() {
-        uint64_t max_latency = 0;
-        int idx;
-        for(idx = 0; idx < LATENCY_HISTORY_SIZE; idx++) {
-            if(latency[idx] > max_latency) max_latency = latency[idx];
-        }
-        printf("[Max latency last second]: drone task: %llu us \t", max_latency);
-        mpu.printf_latency();
 }

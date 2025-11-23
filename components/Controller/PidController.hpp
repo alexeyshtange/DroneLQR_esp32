@@ -3,15 +3,16 @@
 
 class PidController : public IController {
 public:
-    PidController(float kp, float ki, float kd);
+    PidController(float kp, float ki, float kd, float dt);
 
-    ControlOutput update(const Angles& angles, const Angles& setpoints, float dt) override;
+    ControlOutput update(const Angles& angles, const Angles& setpoints) override;
     void reset() override;
 
 private:
     float kp;
     float ki;
     float kd;
+    float dt;
 
     float integratorRoll;
     float integratorPitch;

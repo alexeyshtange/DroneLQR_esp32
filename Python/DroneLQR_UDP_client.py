@@ -1,5 +1,6 @@
 import socket
 import threading
+import time
 import tkinter as tk
 import matplotlib
 matplotlib.use("TkAgg")
@@ -13,37 +14,50 @@ class DroneClient:
         self.measured = (0.0, 0.0, 0.0)
         self.target = (0.0, 0.0, 0.0)
         self.running = False
+        self._lock = threading.Lock()
 
     def set_target_angles(self, roll: float, pitch: float, yaw: float):
-        msg = f"ANGLES={roll},{pitch},{yaw}".encode()
-        self.target = (roll, pitch, yaw)
-        self.sock.sendto(msg, self.addr)
+        with self._lock:
+            self.target = (roll, pitch, yaw)
+
+    def send_disconnect(self):
+        self.sock.sendto(b"DISCONNECT", self.addr)
 
     def start(self):
         self.running = True
         threading.Thread(target=self._recv_loop, daemon=True).start()
+        threading.Thread(target=self._send_loop, daemon=True).start()
 
     def stop(self):
         self.running = False
+        self.send_disconnect()
 
     def _recv_loop(self):
         self.sock.settimeout(0.5)
         while self.running:
             try:
                 data, _ = self.sock.recvfrom(64)
-                rpy = data.decode().split(',')
-                if len(rpy) == 3:
-                    self.measured = tuple(map(float, rpy))
+                msg = data.decode()
+                if msg.startswith("ANGLES="):
+                    rpy = msg[7:].split(',')
+                    if len(rpy) == 3:
+                        self.measured = tuple(map(float, rpy))
             except:
                 pass
 
-# -------------------- GUI --------------------
+    def _send_loop(self):
+        while self.running:
+            with self._lock:
+                r, p, y = self.target
+                msg = f"ANGLES={r},{p},{y}".encode()
+            self.sock.sendto(msg, self.addr)
+            time.sleep(0.05)
 
 class DroneGUI(tk.Tk):
     def __init__(self, client: DroneClient):
         super().__init__()
         self.client = client
-        self.title("Drone Telemetry (Tkinter)")
+        self.title("Drone Telemetry")
         self.geometry("700x450")
 
         self.window_size = 100
@@ -54,7 +68,6 @@ class DroneGUI(tk.Tk):
         self.target_pitch = []
         self.target_yaw = []
 
-        # Sliders
         self.sliders = {}
         for axis in ["Roll", "Pitch", "Yaw"]:
             lbl = tk.Label(self, text=f"{axis}: 0.0")
@@ -65,7 +78,6 @@ class DroneGUI(tk.Tk):
             slider.pack()
             self.sliders[axis] = (lbl, slider)
 
-        # Chart
         self.fig, self.ax = plt.subplots()
         self.lines = {
             "Roll_measured": self.ax.plot([], [], label="Roll (measured)")[0],
@@ -94,19 +106,16 @@ class DroneGUI(tk.Tk):
         self.client.set_target_angles(roll, pitch, yaw)
 
     def update_graph(self):
-        # measured
         r, p, y = self.client.measured
         self.data_roll.append(r)
         self.data_pitch.append(p)
         self.data_yaw.append(y)
 
-        # setpoints
         tr, tp, ty = self.client.target
         self.target_roll.append(tr)
         self.target_pitch.append(tp)
         self.target_yaw.append(ty)
 
-        # kepp last N points
         for data in [self.data_roll, self.data_pitch, self.data_yaw,
                      self.target_roll, self.target_pitch, self.target_yaw]:
             if len(data) > self.window_size:
@@ -116,7 +125,6 @@ class DroneGUI(tk.Tk):
         self.lines["Roll_measured"].set_data(x, self.data_roll)
         self.lines["Pitch_measured"].set_data(x, self.data_pitch)
         self.lines["Yaw_measured"].set_data(x, self.data_yaw)
-
         self.lines["Roll_target"].set_data(x, self.target_roll)
         self.lines["Pitch_target"].set_data(x, self.target_pitch)
         self.lines["Yaw_target"].set_data(x, self.target_yaw)
@@ -124,8 +132,6 @@ class DroneGUI(tk.Tk):
         self.ax.set_xlim(0, self.window_size)
         self.canvas.draw()
         self.after(20, self.update_graph)
-
-# -------------------- Main --------------------
 
 if __name__ == "__main__":
     client = DroneClient()

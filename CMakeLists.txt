@@ -5,9 +5,10 @@ project(DroneLQR)
 
 set(EXTRA_COMPONENT_DIRS components/Drone 
 						 components/WiFiManager 
-						 components/DroneUdpServer 
+						 components/Telemetry 
 						 components/Sampler 
-						 components/SamplingTimer 
+						 components/Sample 
+						 components/ControlTimer 
 						 components/Filter
 						 components/Controller
 						 components/Motor)

@@ -16,6 +16,16 @@ PwmMotor::PwmMotor(int gpio, ledc_channel_t channel_, ledc_timer_t timer_)
     ledc_channel_config(&ch_conf);
 }
 
+void PwmMotor::initPwm() {
+	ledc_timer_config_t timer_conf{};
+	timer_conf.speed_mode = LEDC_LOW_SPEED_MODE;
+	timer_conf.timer_num = LEDC_TIMER_0;
+	timer_conf.duty_resolution = LEDC_TIMER_8_BIT;
+	timer_conf.freq_hz = 50;
+	timer_conf.clk_cfg = LEDC_AUTO_CLK;
+	ledc_timer_config(&timer_conf);
+}
+
 void PwmMotor::setValue(float value) {
 	value = value/45;
     if (value > 1.0f) value = 1.0f;
@@ -23,7 +33,10 @@ void PwmMotor::setValue(float value) {
     currentValue = value;
 
     // convert -1..1 to 0..255
-    uint32_t duty = (uint32_t)((value + 1.0f) / 2.0f * pwmMax);
+    duty = (uint32_t)((value + 1.0f) / 2.0f * pwmMax);
+}
+
+void PwmMotor::updateFromISR() {
     ledc_set_duty(LEDC_LOW_SPEED_MODE, channel, duty);
     ledc_update_duty(LEDC_LOW_SPEED_MODE, channel);
 }

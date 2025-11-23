@@ -1,5 +1,5 @@
 idf_component_register(
-    SRCS "MpuFilter.cpp"
+    SRCS "ComplementaryFilter.cpp"
     INCLUDE_DIRS "."
-    REQUIRES Sampler
+    REQUIRES Sampler Common
 )

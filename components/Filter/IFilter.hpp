@@ -1,11 +1,6 @@
 #pragma once
 #include "ISampler.hpp"
-
-struct Angles {
-    float roll;
-    float pitch;
-    float yaw;
-};
+#include "Angles.hpp"
 
 class IFilter {
 public:

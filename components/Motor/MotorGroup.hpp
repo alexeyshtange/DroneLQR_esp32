@@ -1,15 +1,20 @@
 #pragma once
 #include "IMotor.hpp"
-#include "IController.hpp"
+#include "ControlOutput.hpp"
 
 class MotorGroup {
 public:
     static constexpr int NUM = 4;
 
-    MotorGroup(IMotor* m1, IMotor* m2, IMotor* m3, IMotor* m4);
+    MotorGroup();
+    
+    void setMotors(IMotor* motors_[NUM]);
 
-    void applyControl(const ControlOutput& u);
+    void setControl(const ControlOutput& u);
+    
+    void updateFromISR();
 
 private:
     IMotor* motors[NUM];
+    bool control_set_flag = 0;
 };
