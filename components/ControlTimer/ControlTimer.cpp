@@ -1,6 +1,7 @@
 #include "ControlTimer.hpp"
 #include "MotorGroup.hpp"
 #include "LogicProbe.hpp"
+#include "esp_intr_alloc.h"
 #include "esp_log.h"
 #include "soc/gpio_num.h"
 
@@ -47,7 +48,20 @@ bool IRAM_ATTR ControlTimer::timerIsr(void* arg) {
     if (!self || !self->sampler) return false;
 
     self->sampler->captureSample();
+	//LATENCY
+	self->capture_latency();
+	//LATENCY
     self->motorGroup->updateFromISR();
-
     return true; // request scheduler
 }
+
+//LATENCY
+
+void ControlTimer::capture_latency() {
+	latency = timer_group_get_counter_value_in_isr(TIMER_GROUP_0, TIMER_0);
+}
+
+void ControlTimer::printf_latency() {
+        printf("[ISR]: %llu us \n", latency);
+}
+//LATENCY

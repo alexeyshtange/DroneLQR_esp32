@@ -14,7 +14,9 @@ public:
 	void setMotorGroup(MotorGroup *motorGroup);
     void start();
     void stop();
-
+	//LATENCY
+	void printf_latency();
+	//LATENCY
 private:
     timer_group_t group;
     timer_idx_t timer;
@@ -23,4 +25,9 @@ private:
     uint64_t period;
 
     static bool IRAM_ATTR timerIsr(void* arg);
+    
+    //LATENCY
+    volatile uint64_t latency;
+	void capture_latency();
+	//LATENCY
 };

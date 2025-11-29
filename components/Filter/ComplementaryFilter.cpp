@@ -20,10 +20,10 @@ void ComplementaryFilter::processSample(const ISample& s) {
     // gyro integration
     yaw += sample->gx * dt;
     
-    printf("%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\n",
+/*    printf("%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\t%f\n",
    sample->ax, sample->ay, sample->az,
    sample->gx, sample->gy, sample->gz,
-   roll, pitch, yaw);
+   roll, pitch, yaw);*/
 }
 
 Angles ComplementaryFilter::getAngles() const {

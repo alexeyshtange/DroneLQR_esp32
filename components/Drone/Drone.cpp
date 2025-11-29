@@ -2,6 +2,7 @@
 #include "ComplementaryFilter.hpp"
 #include "PidController.hpp"
 #include "SpiMpuSampler.hpp"
+#include "I2cMpuSampler.hpp"
 #include "MockSampler.hpp"
 #include "PwmMotor.hpp"
 #include "TelemetryUdp.hpp"
@@ -20,21 +21,22 @@ Drone::Drone()
 	
 	motorGroup->setMotors(motors);
 	
+	sampler = new I2cMpuSampler(21, 22, 0x68);
 	//sampler = new SpiMpuSampler(13, 12, 14, 15);
-	sampler = new MockSampler(
+/*	sampler = new MockSampler(
     0.5f, 0.5f, 1.0f,   // accelerometer amplitudes
     0.05f, 0.05f, 0.01f, // gyroscope amplitudes
     0.02f, 0.02f, 0.02f, // accelerometer noise std
     0.005f, 0.005f, 0.002f // gyroscope noise std
-	);
+	);*/
 	
-	controller = new PidController(1.0f, 0.0f, 0.0f, 0.100f);
+	controller = new PidController(1.0f, 0.0f, 0.0f, 0.010f);
 	
-	controlTimer = new ControlTimer(TIMER_GROUP_0, TIMER_0, 100000);
+	controlTimer = new ControlTimer(TIMER_GROUP_0, TIMER_0, 10000);
 	controlTimer->setSampler(sampler);
 	controlTimer->setMotorGroup(motorGroup);
 	
-	filter = new ComplementaryFilter(0.1f, 0.100f);
+	filter = new ComplementaryFilter(0.1f, 0.010f);
 	
 	wifiManager = new WiFiManager("ESP32-Drone", "12345678", "192.168.10.1", "192.168.10.1", "255.255.255.0");
 	wifiManager->start();
@@ -63,6 +65,7 @@ void Drone::loop() {
     ControlOutput control;
 
     while (true) {
+		controlTimer->printf_latency();
         // 1. get sample
     	sampler->readSample(sample, portMAX_DELAY);
     	
