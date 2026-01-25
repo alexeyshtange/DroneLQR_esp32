@@ -4,6 +4,7 @@
 #include "SpiMpuSampler.hpp"
 #include "I2cMpuSampler.hpp"
 #include "MockSampler.hpp"
+#include "VL53L0XSampler.hpp"
 #include "PwmMotor.hpp"
 #include "TelemetryUdp.hpp"
 #include "freertos/FreeRTOS.h"
@@ -21,7 +22,7 @@ Drone::Drone()
 	
 	motorGroup->setMotors(motors);
 	
-	sampler = new I2cMpuSampler(21, 22, 0x68);
+	sampler = new I2cMpuSampler(0x68);
 	//sampler = new SpiMpuSampler(13, 12, 14, 15);
 /*	sampler = new MockSampler(
     0.5f, 0.5f, 1.0f,   // accelerometer amplitudes

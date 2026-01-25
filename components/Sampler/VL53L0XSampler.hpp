@@ -5,22 +5,24 @@
 #include "freertos/queue.h"
 #include "freertos/task.h"
 
-class I2cMpuSampler : public ISampler {
+class VL53L0XSampler : public ISampler {
 public:
-    I2cMpuSampler(uint8_t addr);
-    ~I2cMpuSampler();
+    VL53L0XSampler(uint8_t addr);
+    ~VL53L0XSampler();
 
     void captureSample() override;                   
     bool readSample(ISample& out, TickType_t timeout) override;
 
 private:
     static void samplerTask(void* arg);
-    void wakeMpu();
+    void wakeTof();
+    bool startSingleMeasurement();
+    bool readMeasurement(uint16_t& distance);
 
 private:
     uint8_t addr;
-    struct RawMpuSample {
-        uint8_t buf[14];
+    struct RawRangeSample {
+        uint16_t distance_mm;
         int64_t timestamp;
     };
 

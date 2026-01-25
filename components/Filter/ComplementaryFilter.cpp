@@ -1,6 +1,26 @@
 #include "ComplementaryFilter.hpp"
 #include "AccelGyroSample.hpp"
 
+/*struct RunningMean {
+    float mean = 0.0f;
+    uint32_t n = 0;
+
+    float update(float x) {
+        n++;
+        mean += (x - mean) / n;
+        return mean;
+    }
+};
+
+static RunningMean gx_mean, gy_mean, gz_mean;
+
+float mx = gx_mean.update(gx);
+float my = gy_mean.update(gy);
+float mz = gz_mean.update(gz);
+
+printf("mean gx=%.6f gy=%.6f gz=%.6f\n", mx, my, mz);*/
+
+
 ComplementaryFilter::ComplementaryFilter(float alpha, float dt)
     : alpha(alpha), dt(dt), roll(0.0f), pitch(0.0f), yaw(0.0f)
 {

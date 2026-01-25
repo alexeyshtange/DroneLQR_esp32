@@ -31,6 +31,18 @@ ControlTimer::~ControlTimer() {
 void ControlTimer::setSampler(ISampler* sampler_) {
 	sampler = sampler_;
 }
+
+void ControlTimer::setOrientationSampler(ISampler* sampler_) {
+	orientationSampler = sampler_;
+}
+
+void ControlTimer::setDistanceSampler(ISampler* sampler_) {
+	distanceSampler = sampler_;
+}
+
+void ControlTimer::setOpticalFlowSampler(ISampler* sampler_) {
+	opticalFlowSampler = sampler_;
+}
 void ControlTimer::setMotorGroup(MotorGroup *motorGroup_) {
 	motorGroup = motorGroup_;
 }
@@ -47,11 +59,10 @@ bool IRAM_ATTR ControlTimer::timerIsr(void* arg) {
     ControlTimer* self = static_cast<ControlTimer*>(arg);
     if (!self || !self->sampler) return false;
 
-    self->sampler->captureSample();
-	//LATENCY
-	self->capture_latency();
-	//LATENCY
-    self->motorGroup->updateFromISR();
+//    self->orientationSampler->captureSample();
+    self->distanceSampler->captureSample();
+//    self->opticalFlowSampler->captureSample();
+
     return true; // request scheduler
 }
 

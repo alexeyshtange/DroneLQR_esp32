@@ -11,6 +11,9 @@ public:
     ~ControlTimer();
 
 	void setSampler(ISampler* sampler);
+	void setOrientationSampler(ISampler* sampler);
+	void setDistanceSampler(ISampler* sampler);
+	void setOpticalFlowSampler(ISampler* sampler);
 	void setMotorGroup(MotorGroup *motorGroup);
     void start();
     void stop();
@@ -21,6 +24,9 @@ private:
     timer_group_t group;
     timer_idx_t timer;
     ISampler* sampler;
+    ISampler* orientationSampler;
+    ISampler* distanceSampler;
+    ISampler* opticalFlowSampler;
     MotorGroup* motorGroup;
     uint64_t period;
 
